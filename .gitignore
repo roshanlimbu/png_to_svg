@@ -6,6 +6,17 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# Build output
+dist/
+*.tsbuildinfo
+
+# Temporary files
+*.temp.png
+*.temp-posterize.png
+
+# Example outputs (keep the source examples)
+examples/*.svg
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
