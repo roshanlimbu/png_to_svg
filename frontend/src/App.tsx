@@ -33,7 +33,6 @@ function App() {
   const [svgResult, setSvgResult] = useState<string | null>(null);
   const [bulkResults, setBulkResults] = useState<BulkResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isBulkMode, setIsBulkMode] = useState(false);
   const [options, setOptions] = useState<ConversionOptions>({
     preset: 'logo',
     threshold: 128,
@@ -68,19 +67,25 @@ function App() {
     },
   ];
 
-  const handleFileSelect = (file: File) => {
-    if (file && file.type === 'image/png') {
-      if (isBulkMode) {
-        setSelectedFiles((prev) => [...prev, file]);
-      } else {
-        setSelectedFiles([file]);
-      }
-      setError(null);
-      setSvgResult(null);
-      setBulkResults(null);
-    } else {
+  const handleFileSelect = (files: File[]) => {
+    const pngFiles = files.filter((file) => file.type === 'image/png');
+
+    if (pngFiles.length === 0) {
       setError('Please select PNG files only');
+      return;
     }
+
+    if (pngFiles.length !== files.length) {
+      setError(
+        `Selected ${pngFiles.length} PNG files out of ${files.length} total files. Only PNG files will be processed.`
+      );
+    } else {
+      setError(null);
+    }
+
+    setSelectedFiles(pngFiles);
+    setSvgResult(null);
+    setBulkResults(null);
   };
 
   const removeFile = (index: number) => {
@@ -95,9 +100,9 @@ function App() {
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleFileSelect(Array.from(files));
     }
   };
 
@@ -116,7 +121,7 @@ function App() {
     dropZoneRef.current?.classList.remove('dragover');
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      handleFileSelect(files[0]);
+      handleFileSelect(Array.from(files));
     }
   };
 
@@ -129,8 +134,8 @@ function App() {
     setBulkResults(null);
 
     try {
-      if (isBulkMode || selectedFiles.length > 1) {
-        // Bulk conversion
+      if (selectedFiles.length > 1) {
+        // Bulk conversion for multiple files
         const formData = new FormData();
 
         selectedFiles.forEach((file) => {
@@ -283,14 +288,6 @@ function App() {
           <button className="upload-btn">
             {selectedFiles.length > 0 ? 'Change Files' : 'Select PNG Files'}
           </button>
-          <label className="bulk-mode-toggle">
-            <input
-              type="checkbox"
-              checked={isBulkMode}
-              onChange={(e) => setIsBulkMode(e.target.checked)}
-            />
-            Bulk Mode
-          </label>
         </div>
         <input
           ref={fileInputRef}
@@ -428,6 +425,8 @@ function App() {
                 <div className="spinner"></div>
                 Converting...
               </div>
+            ) : selectedFiles.length > 1 ? (
+              `Convert ${selectedFiles.length} Images to SVG`
             ) : (
               'Convert to SVG'
             )}
