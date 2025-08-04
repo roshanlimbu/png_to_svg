@@ -75,6 +75,18 @@ function App() {
       return;
     }
 
+    // limiting the total file size to (20MB limit)
+    const MAX_SIZE = 20 * 1024 * 1024; // 20MB in bytes
+    const totalSize = pngFiles.reduce((sum, file) => sum + file.size, 0);
+
+    if (totalSize > MAX_SIZE) {
+      const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+      setError(
+        `Total file size (${sizeMB}MB) exceeds the 20MB limit. Please select smaller files or fewer files.`
+      );
+      return;
+    }
+
     if (pngFiles.length !== files.length) {
       setError(
         `Selected ${pngFiles.length} PNG files out of ${files.length} total files. Only PNG files will be processed.`
@@ -236,7 +248,7 @@ function App() {
 
     bulkResults.results.forEach((result, index) => {
       if (result.success) {
-        // Add small delays to prevent browser blocking multiple downloads
+        // adding small delays to prevent browser blocking multiple downloads
         setTimeout(() => handleBulkDownload(result), index * 200);
       }
     });
@@ -244,6 +256,25 @@ function App() {
 
   const handlePresetChange = (presetId: string) => {
     setOptions({ ...options, preset: presetId });
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getTotalSize = (): string => {
+    const totalBytes = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+    return formatFileSize(totalBytes);
+  };
+
+  const getSizePercentage = (): number => {
+    const MAX_SIZE = 20 * 1024 * 1024; // 20MB in bytes
+    const totalBytes = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+    return Math.min((totalBytes / MAX_SIZE) * 100, 100);
   };
 
   return (
@@ -302,11 +333,34 @@ function App() {
       {/* File List Section */}
       {selectedFiles.length > 0 && (
         <div className="file-list-section">
-          <h3>Selected Files ({selectedFiles.length})</h3>
+          <div className="file-list-header">
+            <h3>Selected Files ({selectedFiles.length})</h3>
+            <div className="size-info">
+              <span className="total-size">Total: {getTotalSize()}</span>
+              <span className="size-limit"> / 20MB</span>
+            </div>
+          </div>
+          <div className="size-progress">
+            <div
+              className="size-progress-bar"
+              style={{
+                width: `${getSizePercentage()}%`,
+                backgroundColor:
+                  getSizePercentage() > 90
+                    ? '#ff4757'
+                    : getSizePercentage() > 70
+                    ? '#ffa502'
+                    : '#2ed573',
+              }}
+            ></div>
+          </div>
           <div className="file-list">
             {selectedFiles.map((file, index) => (
               <div key={index} className="file-item">
-                <span className="file-name">{file.name}</span>
+                <div className="file-details">
+                  <span className="file-name">{file.name}</span>
+                  <span className="file-size">{formatFileSize(file.size)}</span>
+                </div>
                 <button
                   className="remove-file-btn"
                   onClick={() => removeFile(index)}
@@ -330,10 +384,13 @@ function App() {
       {/* Options Section */}
       {selectedFiles.length > 0 && (
         <div className="options-section">
-          <h3>
+          <h3 style={{ marginBottom: '1rem' }}>
             <Settings
               size={20}
-              style={{ verticalAlign: 'middle', marginRight: '8px' }}
+              style={{
+                verticalAlign: 'middle',
+                marginRight: '8px',
+              }}
             />
             Conversion Options
           </h3>
