@@ -10,7 +10,14 @@ const port = process.env.PORT || 3001;
 // Enable CORS for frontend communication
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173'], // Common frontend ports
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://pngtosvg.com',
+      'http://pngtosvg.com',
+      'https://api.pngtosvg.com',
+      'http://api.pngtosvg.com',
+    ], // Local development and production domains
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type'],
   })
